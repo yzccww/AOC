@@ -13,27 +13,32 @@
 
 (defn locations-s
   [slope]
-  (map (fn [n] (next-location [0 0] [(* (first slope) n) (* (second slope) n)]))
-       (range)))
+  (let [right (first slope)
+        down  (second slope)]
+    (map (fn [n]
+           (next-location [0 0] [(* right n) (* down n)]))
+         (range))))
 
 (defn valid-locations
   [height locations]
   (->> locations
-       (take-while (fn [loc] (< (second loc) height)))))
+       (take-while (fn [[row col]] (< col height)))))
 
 (defn char-at-location
-  [grid loc]
-  (get-in grid [(second loc) (mod (first loc) (count (first grid)))]))
+  [grid [row col]]
+  (let [x (grid col)
+        y (mod row (count x))]
+    (nth x y)))
 
 (defn tree?
   [ch]
   (= ch \#))
 
 (defn count-trees-on-slope
-  [grid [right down]]
-  (let [locations       (locations-s [right down])
-        valid-locations (valid-locations (count grid) locations)]
-    (->> valid-locations
+  [grid slope]
+  (let [height    (count grid)
+        locations (locations-s slope)]
+    (->> (valid-locations height locations)
          (map (fn [loc] (char-at-location grid loc)))
          (filter tree?)
          count)))
@@ -45,31 +50,29 @@
 (def slopes [[1 1] [3 1] [5 1] [7 1] [1 2]])
 
 (comment
-  (do (def sample-input (file->seq "resources/2020/day3/input-sample.txt"))
-      sample-input)
+  (do (def sample-grid (file->seq "resources/2020/day3/input-sample.txt"))
+      sample-grid)
   #_=> ["..##......."
         ...
         ".#..#...#.#"]
 
-  (take 3 (locations-s [3 1]))
+  (->> (locations-s [3 1])
+       (take 3))
   #_=> ([0 0] [3 1] [6 2])
 
   (take-while neg? [-2 0 1])
   #_=> (-2)
 
-  (valid-locations (count sample-input) (take 5 (locations-s [3 1])))
+  (valid-locations (count sample-grid) (take 5 (locations-s [3 1])))
   #_=> ([0 0] [3 1] [6 2] [9 3] [12 4])
 
-  (get-in sample-input [0 2])
-  #_=> \#
+  (nth ["a" "b" "c"] 1)
+  #_=> "b"
 
-  (get-in sample-input [0 0])
+  (char-at-location sample-grid [0 0])
   #_=> \.
 
-  (char-at-location sample-input [0 0])
-  #_=> \.
-
-  (char-at-location sample-input [2 0])
+  (char-at-location sample-grid [2 0])
   #_=> \#
 
   (tree? \.)
@@ -78,33 +81,32 @@
   (tree? \#)
   #_=> true
 
-  (def valid-locations-sample (valid-locations (count sample-input) (locations-s [3 1])))
+  (def valid-locations-sample (valid-locations (count sample-grid) (locations-s [3 1])))
   #_=> #'advent-of-code.2020.day3/valid-locations-sample
 
-  (->> valid-locations-sample
-       (map (fn [loc] (char-at-location sample-input loc))))
-  #_=> (\. \. \# \. \# \# \. \# \# \# \#)
+  (println valid-locations-sample)
+  #_([0 0] [3 1] [6 2] [9 3] [12 4] [15 5] [18 6] [21 7] [24 8] [27 9] [30 10])
 
   (->> valid-locations-sample
-       (map (fn [loc] (char-at-location sample-input loc)))
+       (map (fn [loc] (char-at-location sample-grid loc)))
        (filter tree?))
   #_=> (\# \# \# \# \# \# \#)
 
-  (count-trees-on-slope sample-input [3 1])
+  (count-trees-on-slope sample-grid [3 1])
   #_=> 7
 
-  (product-of-trees sample-input slopes)
+  (product-of-trees sample-grid slopes)
   #_=> 336
 
-  (do (def input (file->seq "resources/2020/day3/input.txt"))
-      input)
+  (do (def grid (file->seq "resources/2020/day3/input.txt"))
+      grid)
   #_=> [".....#....#...#.#..........#..."
         ...
         ".....#....#..............#....#"]
 
-  (count-trees-on-slope input [3 1])
+  (count-trees-on-slope grid [3 1])
   #_=> 299
 
-  (product-of-trees input slopes)
+  (product-of-trees grid slopes)
   #_=> 3621285278
   )

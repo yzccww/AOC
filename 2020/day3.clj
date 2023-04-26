@@ -7,15 +7,23 @@
        (string/split-lines)))
 
 (defn next-location
-  [loc [right down]]
-  [(+ (first loc) right)
-   (+ (second loc) down)])
+  [[row col] [right down]]
+  [(+ row right)
+   (+ col down)])
 
 (defn locations-s
-  [height [right down]]
-  (take-while #(< (second %) height)
-              (map #(next-location [0 0] [(* right %) (* down %)])
-                   (range))))
+  [slope]
+  (map (fn [n] (next-location [0 0] [(* (first slope) n) (* (second slope) n)]))
+       (range)))
+
+(defn valid-locations
+  [height locations]
+  (->> locations
+       (take-while (fn [loc] (< (second loc) height)))))
+
+(defn char-at-location
+  [grid loc]
+  (get-in grid [(second loc) (mod (first loc) (count (first grid)))]))
 
 (defn tree?
   [ch]
@@ -23,11 +31,10 @@
 
 (defn count-trees-on-slope
   [grid [right down]]
-  (let [height          (count grid)
-        valid-locations (locations-s height [right down])]
+  (let [locations       (locations-s [right down])
+        valid-locations (valid-locations (count grid) locations)]
     (->> valid-locations
-         (map #(get-in grid [(second %) (mod (first %)
-                                             (count (first grid)))]))
+         (map (fn [loc] (char-at-location grid loc)))
          (filter tree?)
          count)))
 
@@ -44,18 +51,14 @@
         ...
         ".#..#...#.#"]
 
+  (take 3 (locations-s [3 1]))
+  #_=> ([0 0] [3 1] [6 2])
+
   (take-while neg? [-2 0 1])
   #_=> (-2)
 
-  (take 3 (map #(next-location [0 0] [(* 3 %) (* 1 %)])
-               (range)))
-  #_=> ([0 0] [3 1] [6 2])
-
-  (locations-s 3 [3 1])
-  #_=> ([0 0] [3 1] [6 2])
-
-  (mod 10 5)
-  #_=> 0
+  (valid-locations (count sample-input) (take 5 (locations-s [3 1])))
+  #_=> ([0 0] [3 1] [6 2] [9 3] [12 4])
 
   (get-in sample-input [0 2])
   #_=> \#
@@ -63,11 +66,29 @@
   (get-in sample-input [0 0])
   #_=> \.
 
+  (char-at-location sample-input [0 0])
+  #_=> \.
+
+  (char-at-location sample-input [2 0])
+  #_=> \#
+
   (tree? \.)
   #_=> false
 
   (tree? \#)
   #_=> true
+
+  (def valid-locations-sample (valid-locations (count sample-input) (locations-s [3 1])))
+  #_=> #'advent-of-code.2020.day3/valid-locations-sample
+
+  (->> valid-locations-sample
+       (map (fn [loc] (char-at-location sample-input loc))))
+  #_=> (\. \. \# \. \# \# \. \# \# \# \#)
+
+  (->> valid-locations-sample
+       (map (fn [loc] (char-at-location sample-input loc)))
+       (filter tree?))
+  #_=> (\# \# \# \# \# \# \#)
 
   (count-trees-on-slope sample-input [3 1])
   #_=> 7

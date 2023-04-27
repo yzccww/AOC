@@ -8,21 +8,24 @@
 
 (defn next-location
   [[row col] [right down]]
-  [(+ row right)
-   (+ col down)])
+  (let [next-row (+ row right)
+        next-col (+ col down)]
+    [next-row next-col]))
+
+(defn next-location-step
+  [right down n]
+  (next-location [0 0] [(* right n) (* down n)]))
 
 (defn locations-s
   [slope]
   (let [right (first slope)
         down  (second slope)]
-    (map (fn [n]
-           (next-location [0 0] [(* right n) (* down n)]))
+    (map (partial next-location-step right down)
          (range))))
 
-(defn valid-locations
-  [height locations]
-  (->> locations
-       (take-while (fn [[row col]] (< col height)))))
+(defn with-height?
+  [[_ col] height]
+  (< col height))
 
 (defn char-at-location
   [grid [row col]]
@@ -38,7 +41,8 @@
   [grid slope]
   (let [height    (count grid)
         locations (locations-s slope)]
-    (->> (valid-locations height locations)
+    (->> locations
+         (take-while (fn [location] (with-height? location height)))
          (map (fn [loc] (char-at-location grid loc)))
          (filter tree?)
          count)))
@@ -56,15 +60,24 @@
         ...
         ".#..#...#.#"]
 
+  (next-location [1 1] [3 1])
+  #_=> [4 2]
+
+  (next-location-step 3 1 2)
+  #_=> [6 2]
+
   (->> (locations-s [3 1])
        (take 3))
   #_=> ([0 0] [3 1] [6 2])
 
+  (with-height? [3 1] 10)
+  #_=> true
+
+  (with-height? [3 1] 1)
+  #_=> false
+
   (take-while neg? [-2 0 1])
   #_=> (-2)
-
-  (valid-locations (count sample-grid) (take 5 (locations-s [3 1])))
-  #_=> ([0 0] [3 1] [6 2] [9 3] [12 4])
 
   (nth ["a" "b" "c"] 1)
   #_=> "b"
@@ -80,17 +93,6 @@
 
   (tree? \#)
   #_=> true
-
-  (def valid-locations-sample (valid-locations (count sample-grid) (locations-s [3 1])))
-  #_=> #'advent-of-code.2020.day3/valid-locations-sample
-
-  (println valid-locations-sample)
-  #_([0 0] [3 1] [6 2] [9 3] [12 4] [15 5] [18 6] [21 7] [24 8] [27 9] [30 10])
-
-  (->> valid-locations-sample
-       (map (fn [loc] (char-at-location sample-grid loc)))
-       (filter tree?))
-  #_=> (\# \# \# \# \# \# \#)
 
   (count-trees-on-slope sample-grid [3 1])
   #_=> 7
